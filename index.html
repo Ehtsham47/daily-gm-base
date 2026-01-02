@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Daily GM (Base)</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      color: #ffffff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .card {
+      background: #111827;
+      padding: 30px;
+      border-radius: 12px;
+      width: 420px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      text-align: center;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 12px;
+      background: #22c55e;
+      border: none;
+      border-radius: 8px;
+      color: #000;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #16a34a;
+    }
+
+    #wallet, #status {
+      margin-top: 12px;
+      font-size: 14px;
+      opacity: 0.9;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="card">
+    <h2>☀️ Daily GM</h2>
+    <p>Base Mainnet</p>
+
+    <button onclick="connectWallet()">Connect Wallet</button>
+    <div id="wallet"></div>
+
+    <button onclick="sendGM()">Send GM</button>
+    <div id="status"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.10.0/dist/ethers.umd.min.js"></script>
+
+  <script>
+    const CONTRACT_ADDRESS = "0xe784FdD29B64E07DDdC492F4c543378440276424";
+
+    const ABI = [
+      "function sendGM()",
+      "function currentUTCDay() view returns (uint256)"
+    ];
+
+    let provider, signer, contract;
+
+    async function connectWallet() {
+      if (!window.ethereum) {
+        alert("MetaMask not installed");
+        return;
+      }
+
+      await window.ethereum.request({ method: "eth_requestAccounts" });
+      provider = new ethers.BrowserProvider(window.ethereum);
+      signer = await provider.getSigner();
+      contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+
+      document.getElementById("wallet").innerText =
+        "Connected: " + await signer.getAddress();
+    }
+
+    async function sendGM() {
+      try {
+        if (!contract) {
+          document.getElementById("status").innerText = "Connect wallet first";
+          return;
+        }
+
+        const tx = await contract.sendGM();
+        document.getElementById("status").innerText = "GM sent ⛅ Waiting...";
+        await tx.wait();
+        document.getElementById("status").innerText = "GM recorded on-chain ✅";
+      } catch (err) {
+        document.getElementById("status").innerText =
+          "GM already sent today ❌";
+      }
+    }
+  </script>
+</body>
+</html>
