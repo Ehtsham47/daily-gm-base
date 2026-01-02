@@ -133,10 +133,25 @@
     }
 
     async function updateStreak() {
-      const lastDay = Number(await contract.lastGMDay());
-      document.getElementById("streak").innerText =
-        "🔥 GM Day #: " + lastDay;
-    }
+  const lastDay = Number(await contract.lastGMDay());
+
+  if (lastDay === 0) {
+    document.getElementById("streak").innerText = "🔥 GM Streak: 0";
+    return;
+  }
+
+  let firstDay = localStorage.getItem("firstGMDay");
+
+  if (!firstDay) {
+    localStorage.setItem("firstGMDay", lastDay);
+    firstDay = lastDay;
+  }
+
+  const streak = lastDay - Number(firstDay) + 1;
+
+  document.getElementById("streak").innerText =
+    "🔥 GM Streak: " + streak;
+}
 
     function updateTimer() {
       const now = Math.floor(Date.now() / 1000);
