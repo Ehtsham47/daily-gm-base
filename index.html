@@ -1,64 +1,97 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>Daily GM (Base)</title>
+  <meta charset="UTF-8" />
+  <title>Daily GM · Base</title>
 
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-      color: #ffffff;
+      font-family: Inter, Arial, sans-serif;
+      background: #0a0b0d;
+      color: white;
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
+      margin: 0;
     }
 
     .card {
-      background: #111827;
-      padding: 30px;
-      border-radius: 12px;
+      background: #0f1115;
+      border: 1px solid #1c1f26;
+      border-radius: 16px;
+      padding: 32px;
       width: 420px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
       text-align: center;
+    }
+
+    .logo {
+      width: 40px;
+      margin-bottom: 10px;
+    }
+
+    h2 {
+      margin: 10px 0;
+      font-weight: 600;
+    }
+
+    .subtitle {
+      color: #9ca3af;
+      font-size: 14px;
+      margin-bottom: 20px;
     }
 
     button {
       width: 100%;
-      padding: 12px;
+      padding: 14px;
       margin-top: 12px;
-      background: #22c55e;
+      background: #0052ff;
       border: none;
-      border-radius: 8px;
-      color: #000;
+      border-radius: 10px;
+      color: white;
       font-size: 16px;
-      font-weight: bold;
+      font-weight: 600;
       cursor: pointer;
     }
 
     button:hover {
-      background: #16a34a;
+      background: #0043d6;
     }
 
-    #wallet, #status {
-      margin-top: 12px;
+    .info {
+      margin-top: 14px;
       font-size: 14px;
-      opacity: 0.9;
+      color: #9ca3af;
+    }
+
+    .streak {
+      font-size: 22px;
+      font-weight: bold;
+      margin-top: 14px;
+      color: #0052ff;
     }
   </style>
 </head>
 
 <body>
   <div class="card">
-    <h2>☀️ Daily GM</h2>
-    <p>Base Mainnet</p>
+    <img
+      class="logo"
+      src="https://base.org/favicon.ico"
+      alt="Base Logo"
+    />
+
+    <h2>Daily GM</h2>
+    <div class="subtitle">Built on Base</div>
 
     <button onclick="connectWallet()">Connect Wallet</button>
-    <div id="wallet"></div>
+    <div id="wallet" class="info"></div>
+
+    <div class="streak" id="streak">🔥 GM Streak: 0</div>
+    <div class="info" id="timer">Next GM reset in: --:--:--</div>
 
     <button onclick="sendGM()">Send GM</button>
-    <div id="status"></div>
+    <div id="status" class="info"></div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.10.0/dist/ethers.umd.min.js"></script>
@@ -68,17 +101,13 @@
 
     const ABI = [
       "function sendGM()",
+      "function lastGMDay() view returns (uint256)",
       "function currentUTCDay() view returns (uint256)"
     ];
 
     let provider, signer, contract;
 
     async function connectWallet() {
-      if (!window.ethereum) {
-        alert("MetaMask not installed");
-        return;
-      }
-
       await window.ethereum.request({ method: "eth_requestAccounts" });
       provider = new ethers.BrowserProvider(window.ethereum);
       signer = await provider.getSigner();
@@ -86,24 +115,43 @@
 
       document.getElementById("wallet").innerText =
         "Connected: " + await signer.getAddress();
+
+      updateStreak();
     }
 
     async function sendGM() {
       try {
-        if (!contract) {
-          document.getElementById("status").innerText = "Connect wallet first";
-          return;
-        }
-
         const tx = await contract.sendGM();
-        document.getElementById("status").innerText = "GM sent ⛅ Waiting...";
+        document.getElementById("status").innerText = "Sending GM...";
         await tx.wait();
-        document.getElementById("status").innerText = "GM recorded on-chain ✅";
-      } catch (err) {
+        document.getElementById("status").innerText = "GM recorded ✅";
+        updateStreak();
+      } catch {
         document.getElementById("status").innerText =
-          "GM already sent today ❌";
+          "Already sent GM today ❌";
       }
     }
+
+    async function updateStreak() {
+      const lastDay = Number(await contract.lastGMDay());
+      document.getElementById("streak").innerText =
+        "🔥 GM Day #: " + lastDay;
+    }
+
+    function updateTimer() {
+      const now = Math.floor(Date.now() / 1000);
+      const nextUTC = Math.floor(now / 86400 + 1) * 86400;
+      const diff = nextUTC - now;
+
+      const h = String(Math.floor(diff / 3600)).padStart(2, "0");
+      const m = String(Math.floor((diff % 3600) / 60)).padStart(2, "0");
+      const s = String(diff % 60).padStart(2, "0");
+
+      document.getElementById("timer").innerText =
+        `Next GM reset in: ${h}:${m}:${s}`;
+    }
+
+    setInterval(updateTimer, 1000);
   </script>
 </body>
 </html>
